@@ -1,13 +1,12 @@
 # env
 
-My portable shell environment as a Nix flake: a wrapped zsh with a Nord-themed
-prompt, neovim, and the CLI tools I expect on any machine. No home-manager — each
-tool is a self-contained wrapped package carrying its own config.
+Portable shell environment as a Nix flake: a wrapped zsh with a Nord-themed
+prompt, neovim, and the CLI tools I expect on any machine. Each tool is a self-contained wrapped package carrying its own config.
 
 ## Install
 
 ```sh
-nix profile install github:dtpoole/env#environment
+nix profile add github:dtpoole/env#environment
 ```
 
 Or run it without installing:
