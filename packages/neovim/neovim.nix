@@ -24,8 +24,6 @@
           pkgs.vimPlugins.lz-n
           pkgs.vimPlugins.plenary-nvim
           pkgs.vimPlugins.nvim-web-devicons
-          pkgs.vimPlugins.nord-nvim
-          pkgs.vimPlugins.lualine-nvim
           {
             data = pkgs.vimPlugins.nvim-treesitter.withPlugins (p:
               with p; [
@@ -44,11 +42,20 @@
         ];
       };
 
+      # `lazy` here is placement, not deferral: it puts the plugin in pack/../opt
+      # instead of pack/../start, so nvim does not auto-add it to runtimepath and
+      # lz.n's packadd is the only thing that does. Anything with an lz.n spec in
+      # lua/plugins/ belongs here -- left in `plugins` it lands on runtimepath twice,
+      # which breaks runtime-file lookups that expect one hit per file.
+      #
+      # nord/lualine still load at startup; their lz.n specs set lazy = false.
       lazyPlugins = {
         lazy = true;
         data = [
           pkgs.vimPlugins.oil-nvim
           pkgs.vimPlugins.telescope-nvim
+          pkgs.vimPlugins.nord-nvim
+          pkgs.vimPlugins.lualine-nvim
         ];
       };
     };
