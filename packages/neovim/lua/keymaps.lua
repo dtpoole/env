@@ -27,8 +27,10 @@ map('n', '_$', ':%s/\\s\\+$//e<CR>')
 
 -- LSP
 map('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic' })
-map('n', '[d', vim.diagnostic.goto_prev, { desc = 'Previous diagnostic' })
-map('n', ']d', vim.diagnostic.goto_next, { desc = 'Next diagnostic' })
+-- float=true matches the old goto_prev/goto_next behaviour; nvim's built-in
+-- ]d / [d jump without opening the float.
+map('n', '[d', function() vim.diagnostic.jump({ count = -1, float = true }) end, { desc = 'Previous diagnostic' })
+map('n', ']d', function() vim.diagnostic.jump({ count = 1, float = true }) end, { desc = 'Next diagnostic' })
 
 -- Format (LSP or fallback)
 map('n', '_=', function()
