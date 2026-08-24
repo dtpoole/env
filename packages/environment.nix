@@ -39,13 +39,22 @@
     ];
   in {
     # primary shell with packages
-    packages.environment = inputs.wrappers.lib.wrapPackage {
-      inherit pkgs runtimeInputs;
-      package = self'.packages.zsh;
-      env = {
-        EDITOR = "nvim";
-        NIX_EXTRA_PATHS = lib.makeBinPath runtimeInputs;
-      };
-    };
+    packages.default = self'.packages.environment;
+
+    # wrapPackage inherits the wrapped package's name, so without the rename this
+    # lands in `nix profile list` as "zsh" and collides with packages.zsh.
+    packages.environment =
+      (inputs.wrappers.lib.wrapPackage {
+        inherit pkgs runtimeInputs;
+        package = self'.packages.zsh;
+        env = {
+          EDITOR = "nvim";
+          NIX_EXTRA_PATHS = lib.makeBinPath runtimeInputs;
+        };
+      })
+      .overrideAttrs (old: {
+        name = "environment";
+        meta = old.meta // {mainProgram = "zsh";};
+      });
   };
 }
