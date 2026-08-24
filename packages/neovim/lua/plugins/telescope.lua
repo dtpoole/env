@@ -7,7 +7,7 @@ return {
     { "<leader>gc", desc = "Git commits" },
     { "<leader>gs", desc = "Git status" },
     { "<leader>d",  desc = "Diagnostics" },
-    { "<leader>g",  desc = "Live grep" },
+    { "<leader>r",  desc = "Live grep" },
   },
   after = function()
     local builtin = require('telescope.builtin')
@@ -32,6 +32,6 @@ return {
     vim.keymap.set('n', '<leader>gc', builtin.git_commits,  { desc = 'Git commits' })
     vim.keymap.set('n', '<leader>gs', builtin.git_status,   { desc = 'Git status' })
     vim.keymap.set('n', '<leader>d', builtin.diagnostics,   { desc = 'Diagnostics' })
-    vim.keymap.set('n', '<leader>g', builtin.live_grep,     { desc = 'Live grep' })
+    vim.keymap.set('n', '<leader>r', builtin.live_grep,     { desc = 'Live grep' })
   end,
 }
