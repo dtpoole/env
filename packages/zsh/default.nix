@@ -31,7 +31,13 @@
       pkgs.writeText "zshrc"
       # zsh
       ''
-        typeset -U path cdpath fpath manpath
+        # Must come before the NIX_PROFILES fpath loop below: this script is what
+        # sets NIX_PROFILES, and `setopt no_global_rcs` (.zshenv) suppresses the
+        # /etc/zshrc that would otherwise have sourced it for us.
+        if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+        fi
+
         [[ -d /run/current-system/sw ]] && NIX_PROFILES="/run/current-system/sw ''${NIX_PROFILES}"
         for profile in ''${(z)NIX_PROFILES}; do
           fpath+=($profile/share/zsh/site-functions $profile/share/zsh/$ZSH_VERSION/functions $profile/share/zsh/vendor-completions)
@@ -50,7 +56,7 @@
         export LS_COLORS="$(<${lsColors})"
 
         ZSH_COMPDUMP="$HOME/.cache/zsh/zcompdump"
-        mkdir -p "''${ZSH_COMPDUMP:h}"
+        mkdir -p -m 700 "''${ZSH_COMPDUMP:h}"
 
         autoload -Uz compinit
         () {
@@ -85,7 +91,7 @@
         HISTSIZE=100000
         SAVEHIST=100000
         HISTFILE="$HOME/.local/share/zsh/history"
-        mkdir -p "''${HISTFILE:h}"
+        mkdir -p -m 700 "''${HISTFILE:h}"
 
         setopt EXTENDED_HISTORY HIST_EXPIRE_DUPS_FIRST HIST_IGNORE_ALL_DUPS
         setopt HIST_FCNTL_LOCK HIST_IGNORE_SPACE SHARE_HISTORY
@@ -103,18 +109,29 @@
         bindkey '^[[A' history-substring-search-up
         bindkey '^[[B' history-substring-search-down
 
-        if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-        fi
+        # Machine-local dirs go last: /usr/local/bin and /opt/homebrew/bin are
+        # group-writable by admin, and anything there shadowing a wrapped tool would
+        # defeat the point of pinning them.
+        path=(
+          $path
+          $HOME/.local/bin
+          $HOME/bin
+          $HOME/.cargo/bin
+          /usr/local/bin
+          /usr/local/sbin
+          /opt/homebrew/bin
+        )
 
-        path=($HOME/.local/bin $HOME/bin $HOME/.cargo/bin /usr/local/bin /usr/local/sbin /opt/homebrew/bin $path)
-
+        # `cd ""` is a silent no-op in zsh, so an unguarded `cd "$(mktemp -d)"` would
+        # leave us in $PWD and chmod -R the tree we were standing in.
         tempe () {
-          cd "$(mktemp -d)"
+          local tmp
+          tmp=$(mktemp -d) || return 1
+          cd "$tmp" || return 1
           chmod -R 0700 .
           if [[ $# -eq 1 ]]; then
-            \mkdir -p "$1"
-            cd "$1"
+            \mkdir -p "$1" || return 1
+            cd "$1" || return 1
             chmod -R 0700 .
           fi
           pwd
@@ -167,7 +184,12 @@
       pkgs.writeText "zshenv"
       # zsh
       ''
-        [[ -n "$NIX_EXTRA_PATHS" ]] && export PATH="$NIX_EXTRA_PATHS:$PATH"
+        # Set here rather than in .zshrc: .zshenv runs for non-interactive shells too,
+        # and without dedup PATH grows on every nested `zsh -c`. Note the prepend below
+        # goes through the `path` array, not the PATH scalar -- `typeset -U` only
+        # dedupes on array assignment.
+        typeset -U path cdpath fpath manpath
+        [[ -n "$NIX_EXTRA_PATHS" ]] && path=(''${(s.:.)NIX_EXTRA_PATHS} $path)
         setopt no_global_rcs
         skip_global_compinit=1
       '';
